@@ -22,12 +22,12 @@ jobs:
           # Ajoute la clé SSH privée stockée dans les "secrets" GitHub
           chmod 600 ~/.ssh/id_rsa  
           # Modifie les permissions pour que seule l’utilisateur actuel puisse la lire
-          ssh-keyscan -H 192.168.1.20 >> ~/.ssh/known_hosts  
+          ssh-keyscan -H 192.168.175.132 >> ~/.ssh/known_hosts  
           # Ajoute la clé de l’hôte du serveur distant pour éviter l’erreur de vérification SSH
 
       - name: Déployer et redémarrer le conteneur sur web-server
         run: |
-          ssh -i ~/.ssh/id_rsa user@192.168.1.20 << 'EOF'
+          ssh -i ~/.ssh/id_rsa user@192.168.175.132 << 'EOF'
             # Se connecte au serveur distant via SSH en utilisant la clé privée
             cd ~/flask-ci-cd  # Se place dans le dossier du projet sur le serveur
             git pull origin main  # Met à jour le code source depuis le dépôt GitHub
