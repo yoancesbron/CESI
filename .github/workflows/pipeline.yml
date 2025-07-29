@@ -1,16 +1,39 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline  # Nom du pipeline GitHub Actions
 
 on:
   push:
     branches:
-      - main
+      - main  # Déclenche le pipeline à chaque `push` sur la branche `main`
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Récupérer le code
-        uses: actions/checkout@v2
+  deploy:  # Définition du job "deploy"
+    runs-on: ubuntu-latest  # Exécute ce job sur une machine virtuelle Ubuntu
 
-      - name: Déployer sur le serveur
-        run: ssh user@192.168.175.132 "docker-compose down && docker-compose up -d"
+    steps:  # Liste des étapes du job
+
+      - name: Récupérer le code
+        uses: actions/checkout@v2  
+        # Cette action télécharge le code du dépôt GitHub dans la machine virtuelle GitHub Actions.
+
+      - name: Ajouter la clé SSH privée pour se connecter au serveur
+        run: |
+          mkdir -p ~/.ssh  # Crée le dossier SSH si ce n’est pas déjà fait
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  
+          # Ajoute la clé SSH privée stockée dans les "secrets" GitHub
+          chmod 600 ~/.ssh/id_rsa  
+          # Modifie les permissions pour que seule l’utilisateur actuel puisse la lire
+          ssh-keyscan -H 192.168.1.20 >> ~/.ssh/known_hosts  
+          # Ajoute la clé de l’hôte du serveur distant pour éviter l’erreur de vérification SSH
+
+      - name: Déployer et redémarrer le conteneur sur web-server
+        run: |
+          ssh -i ~/.ssh/id_rsa user@192.168.1.20 << 'EOF'
+            # Se connecte au serveur distant via SSH en utilisant la clé privée
+            cd ~/flask-ci-cd  # Se place dans le dossier du projet sur le serveur
+            git pull origin main  # Met à jour le code source depuis le dépôt GitHub
+            docker build -t flask-app .  # Recompile l'image Docker à partir du Dockerfile
+            docker stop mon-flask-app || true  # Stoppe le conteneur en cours s’il existe
+            docker rm mon-flask-app || true  # Supprime le conteneur existant pour éviter les conflits
+            docker run -d -p 5000:5000 --name mon-flask-app flask-app  
+            # Lance un nouveau conteneur avec l’image mise à jour et expose le port 5000
+          EOF 
