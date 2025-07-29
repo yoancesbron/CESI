@@ -1,0 +1,16 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v2
+
+      - name: Déployer sur le serveur
+        run: ssh user@192.168.175.132 "docker-compose down && docker-compose up -d"
